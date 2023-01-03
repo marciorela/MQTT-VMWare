@@ -23,6 +23,7 @@ namespace MQTT_Testes
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            var _delay = _config.GetValue<int>("Service:Delay", 30000);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -41,7 +42,7 @@ namespace MQTT_Testes
                     //devices.Add(device);
                 }
 
-                await Task.Delay(30000, stoppingToken);
+                await Task.Delay(_delay, stoppingToken);
             }
         }
     }

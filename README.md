@@ -9,8 +9,11 @@ appsettings.json:
 ```json
 {
   "Folders": {
-    "VMs": "<pasta onde estão as VMs",
+    "VMs": "<pasta onde estão as VMs>",
   },
+  "Service": {
+    "Delay": "<tempo de espera entre as chamadas (default 30000)>"
+  }
   "MQTT": {
     "Server": "<IP do servidor MQTT>",
     "Username": "<Usuario do MQTT>",
