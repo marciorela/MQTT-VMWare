@@ -11,11 +11,13 @@ namespace MQTT_Testes.Domain
     {
         private bool _state = false;
         private readonly string _topic = "homeassistant/binary_sensor/computers/";
+        //private readonly string _topic = "homeassistant/switch/computers/";
         private readonly MQTTService _mqtt;
 
         public string Unique_id { get; } = "";
         public string Name { get; } = "";
         public string Device_class { get; } = "connectivity";
+        //public string Device_class { get; } = "switch";
         public string State_topic { get; } = "";
 
         //public string Unit_of_measurement { get; } = "";

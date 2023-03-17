@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,10 +11,12 @@ namespace MQTT_Testes.Services
     public class VMService
     {
         private readonly IConfiguration _config;
+        private readonly ILogger<VMService> _logger;
 
-        public VMService(IConfiguration config)
+        public VMService(IConfiguration config, ILogger<VMService> logger)
         {
             _config = config;
+            _logger = logger;
         }
 
         public List<string> ListAllVMs()
@@ -26,7 +29,7 @@ namespace MQTT_Testes.Services
             var path = _config.GetValue<string>("Folders:VMs");
             if (!Directory.Exists(path))
             {
-                Console.WriteLine($"Diretório {path} não existe.");
+                _logger.LogWarning("Diretório {path} não existe.", path);
             }
             else
             {
@@ -40,14 +43,18 @@ namespace MQTT_Testes.Services
                         result.Add(name);
                     }
                 }
+                _logger.LogInformation("Máquinas virtuais disponíveis em {path}: {total}", path, files.Length.ToString());
             }
 
             return result;
         }
 
-        private static string GetVMName(string file)
+        private string GetVMName(string file)
         {
             const string displayNameKey = "displayName =";
+
+            var path = _config.GetValue<string>("Folders:VMs");
+            file = Path.Combine(path, Path.GetFileNameWithoutExtension(file), Path.GetFileName(file));
 
             var conteudo = File.ReadAllLines(file);
             var name = conteudo.Where(x => x.StartsWith(displayNameKey)).FirstOrDefault("");
@@ -84,6 +91,8 @@ namespace MQTT_Testes.Services
 
             //Console.WriteLine(output);
 
+            _logger.LogInformation("Output do comando list:\n{output}.", output);
+
             var files = output.Split("\r\n").ToList();
             files.RemoveAt(0); // A PRIMEIRA LINHA É O "CABEÇALHO"
             foreach (var file in files)
@@ -94,6 +103,8 @@ namespace MQTT_Testes.Services
                     result.Add(name);
                 }
             }
+
+            _logger.LogInformation("Máquinas virtuais executando: {total}.", result.Count);
 
             return result;
         }

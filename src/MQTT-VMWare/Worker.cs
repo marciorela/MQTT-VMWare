@@ -23,11 +23,12 @@ namespace MQTT_Testes
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+  
             var _delay = _config.GetValue<int>("Service:Delay", 30000);
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
                 var running = _vmService.ListRunningVMs();
                 //var devices = new List<Device>();
