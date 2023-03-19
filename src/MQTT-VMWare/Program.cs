@@ -1,6 +1,7 @@
 using MQTT_Testes;
 using MQTT_Testes.Services;
 using MR.Log;
+using MR.MQTT.Service;
 
 //IHost host = Host.CreateDefaultBuilder(args)
 //    .UseWindowsService(options =>

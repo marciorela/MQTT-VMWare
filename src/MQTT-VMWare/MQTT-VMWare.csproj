@@ -16,8 +16,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.1" />
-    <PackageReference Include="MQTTnet" Version="4.1.4.563" />
     <PackageReference Include="MR.Log" Version="1.0.1" />
+    <PackageReference Include="MR.MQTT" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
