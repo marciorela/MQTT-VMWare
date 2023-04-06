@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MQTT_Testes.Domain;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -53,8 +54,7 @@ namespace MQTT_Testes.Services
         {
             const string displayNameKey = "displayName =";
 
-            var path = _config.GetValue<string>("Folders:VMs");
-            file = Path.Combine(path, Path.GetFileNameWithoutExtension(file), Path.GetFileName(file));
+            file = GetRealVMFileName(file);
 
             var conteudo = File.ReadAllLines(file);
             var name = conteudo.Where(x => x.StartsWith(displayNameKey)).FirstOrDefault("");
@@ -70,17 +70,49 @@ namespace MQTT_Testes.Services
             return name;
         }
 
-        public List<string> ListRunningVMs()
+        private string GetRealVMFileName(string file)
         {
-            var result = new List<string>();
+            var path = _config.GetValue<string>("Folders:VMs");
+            return Path.Combine(path, Path.GetFileNameWithoutExtension(file), Path.GetFileName(file));
+        }
 
+        public List<VMDetalhe> ListRunningVMs()
+        {
+            var result = new List<VMDetalhe>();
+
+            var files = GetVMWareCommandResult("list");
+
+            files.RemoveAt(0); // A PRIMEIRA LINHA É O "CABEÇALHO"
+            foreach (var file in files)
+            {
+                if (!string.IsNullOrWhiteSpace(file))
+                {
+                    //var ip = String.Join(",", GetVMWareCommandResult($"getGuestIPAddress {GetRealVMFileName(file)}"));
+                    var ip = String.Join(",", GetVMWareCommandResult($"getGuestIPAddress {file}"));
+                    
+                    var name = GetVMName(file);
+                    result.Add(new VMDetalhe()
+                    {
+                        Name = name,
+                        Ip = ip
+                    });
+                }
+            }
+
+            _logger.LogInformation("Máquinas virtuais executando: {total}.", result.Count);
+
+            return result;
+        }
+
+        private List<string> GetCommandResult(string cmd, string args)
+        {
             // Start the child process.
             Process p = new();
             // Redirect the output stream of the child process.
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.FileName = "cmd.exe";
-            p.StartInfo.Arguments = "/C \"C:\\Program Files (x86)\\VMware\\VMware Workstation\\vmrun\" list";
+            p.StartInfo.FileName = cmd;
+            p.StartInfo.Arguments = args;
             p.Start();
             // Do not wait for the child process to exit before
             // reading to the end of its redirected stream.
@@ -91,22 +123,21 @@ namespace MQTT_Testes.Services
 
             //Console.WriteLine(output);
 
-            _logger.LogInformation("Output do comando list:\n{output}.", output);
+            return output.Split("\r\n").ToList();
+        }
 
-            var files = output.Split("\r\n").ToList();
-            files.RemoveAt(0); // A PRIMEIRA LINHA É O "CABEÇALHO"
-            foreach (var file in files)
+        private List<string> GetVMWareCommandResult(string args) 
+        {
+            var output = GetCommandResult("cmd.exe", "/C \"C:\\Program Files (x86)\\VMware\\VMware Workstation\\vmrun\" " + args);
+
+            if (output.Last() == "")
             {
-                if (!string.IsNullOrWhiteSpace(file))
-                {
-                    var name = GetVMName(file);
-                    result.Add(name);
-                }
+                output.Remove(output.Last());
             }
+            
+            _logger.LogInformation("Output do comando {args}:\n{output}", args, String.Join(",", output));
 
-            _logger.LogInformation("Máquinas virtuais executando: {total}.", result.Count);
-
-            return result;
+            return output;
         }
     }
 }

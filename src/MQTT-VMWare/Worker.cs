@@ -5,6 +5,7 @@ using MQTT_Testes.Domain;
 using MQTT_Testes.Services;
 using MR.MQTT.Service;
 using MR.MQTT.Domain;
+using System.Linq;
 
 namespace MQTT_Testes
 {
@@ -14,7 +15,7 @@ namespace MQTT_Testes
         private readonly IConfiguration _config;
         private readonly VMService _vmService;
         private readonly MQTTService _mqtt;
-        private List<Device> _devices = new();
+        private readonly List<Device> _devices = new();
 
         public Worker(ILogger<Worker> logger, IConfiguration config, VMService vmService, MQTTService mqtt)
         {
@@ -26,40 +27,46 @@ namespace MQTT_Testes
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-
-            var _delay = _config.GetValue<int>("Service:Delay", 30000);
-
-            while (!stoppingToken.IsCancellationRequested)
+            try
             {
+                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
-                var running = _vmService.ListRunningVMs();
-                //var devices = new List<Device>();
-                var vms = _vmService.ListAllVMs();
-                foreach (var vm in vms)
+                var _delay = _config.GetValue<int>("Service:Delay", 30000);
+
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    var device = GetDevice(vm);
 
-                    await _mqtt.Register(device);
-                    await _mqtt.SendState(device, running.Where(x => x == device.Name).Any());
-                    //device.SetState(running.Where(x => x == device.Name).Any());
-
-                    if (!_devices.Where(x => x.Name == device.Name).Any())
+                    var running = _vmService.ListRunningVMs();
+                    var vms = _vmService.ListAllVMs();
+                    foreach (var vm in vms)
                     {
-                        _devices.Add(device);
-                    }
-                }
+                        var device = GetDevice(vm);
 
-                await Task.Delay(_delay, stoppingToken);
+                        var run = running.Where(x => x.Name == device.Id).FirstOrDefault();
+                        if (run != null)
+                        {
+                            device.Attributes = run;
+                        }
+
+                        await _mqtt.Register(device);
+                        await _mqtt.SendState(device, run != null);
+                    }
+
+                    await Task.Delay(_delay, stoppingToken);
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
             }
         }
 
-        private Device GetDevice(string folder)
+        private Device GetDevice(string id)
         {
-            var device = _devices.FirstOrDefault(x => x.Name == folder);
+            var device = _devices.FirstOrDefault(x => x.Id == id);
             if (device == null)
             {
-                device = new Device(folder);
+                device = new Device(id);
                 _devices.Add(device);
             }
             return device;

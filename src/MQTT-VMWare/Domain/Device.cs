@@ -15,13 +15,6 @@ namespace MQTT_Testes.Domain
         {
             Topic = "homeassistant/binary_sensor/computers/";
             Device_class = "connectivity";
-
-            Unique_id = name.ToLower().Replace(" ", "_");
-
-            Topic += Unique_id;
-
-            Name = name;
-            State_topic = $"{Topic}/state";
         }
 
     }
